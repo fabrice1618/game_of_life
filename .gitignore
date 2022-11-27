@@ -1,0 +1,6 @@
+include/
+SDL2.dll
+obj/
+bin/
+game_of_life.depend
+game_of_life.layout
