@@ -25,6 +25,7 @@ enum game_state {
 
 // Variables globales
 char cell_grid[GRID_Y][GRID_X];
+char next_grid[GRID_Y][GRID_X];
 
 /*
 Exception : InitError
@@ -77,8 +78,8 @@ public:
 
 SDL::SDL( Uint32 flags )
 {
-    int screen_w = GRID_X * 10;
-    int screen_h = GRID_Y * 10;
+    int screen_w = GRID_X * CELL_ZONE;
+    int screen_h = GRID_Y * CELL_ZONE;
 
     if ( SDL_Init( flags ) != 0 )
         throw InitError();
@@ -141,8 +142,84 @@ void grid_random()
             alea = rand() % RANDOM_MAX;
             if (alea < RANDOM_LIFE)
                 cell_grid[y][x] = 1;
+            else
+                cell_grid[y][x] = 0;
         }
     }
+}
+
+int convert_x(int x)
+{
+    if (x<0) {
+        x = x + GRID_X;
+    } else {
+        x = x % GRID_X;
+    }
+
+    return(x);
+}
+
+int convert_y(int y)
+{
+    if (y<0) {
+        y = y + GRID_Y;
+    } else {
+        y = y % GRID_Y;
+    }
+
+    return(y);
+}
+
+int cell_count( int y, int x )
+{
+    int nb_vivante =    cell_grid[convert_y(y-1)][convert_x(x-1)] +
+                        cell_grid[convert_y(y-1)][convert_x(x)] +
+                        cell_grid[convert_y(y-1)][convert_x(x+1)] +
+                        cell_grid[convert_y(y)][convert_x(x-1)] +
+                        cell_grid[convert_y(y)][convert_x(x+1)] +
+                        cell_grid[convert_y(y+1)][convert_x(x-1)] +
+                        cell_grid[convert_y(y+1)][convert_x(x)] +
+                        cell_grid[convert_y(y+1)][convert_x(x+1)] ;
+    return(nb_vivante);
+}
+
+void next_state()
+{
+    int nb_autour;
+
+    for (int y=0; y < GRID_Y; y++) {
+        for (int x=0; x < GRID_X; x++) {
+            // Compter le nombre de celulles vivantes autour
+            nb_autour = cell_count(y, x);
+
+            if (cell_grid[y][x] == 1) {
+                // Si la celulle etait vivante
+                if (nb_autour == 2 || nb_autour == 3) {
+                    next_grid[y][x] = 1;
+                } else {
+                    next_grid[y][x] = 0;
+                }
+            } else {
+                // Si la celulle etait morte
+                if (nb_autour == 3) {
+                    next_grid[y][x] = 1;
+                } else {
+                    next_grid[y][x] = 0;
+                }
+            }
+        }
+    }
+
+}
+
+int copy_grid()
+{
+    for (int y=0; y < GRID_Y; y++) {
+        for (int x=0; x < GRID_X; x++) {
+            cell_grid[y][x] = next_grid[y][x];
+        }
+    }
+
 }
 
 int main( int argc, char * argv[] )
@@ -164,6 +241,8 @@ int main( int argc, char * argv[] )
 
             if (state != GAME_QUIT) {
                 sdl.draw();
+                next_state();
+                copy_grid();
                 SDL_Delay( 500 );
             }
 
